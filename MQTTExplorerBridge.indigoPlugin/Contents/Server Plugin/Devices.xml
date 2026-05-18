@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- MQTT Explorer Bridge — one device per broker -->
+<Devices>
+
+    <Device type="custom" id="mqttBroker">
+        <Name>MQTT Broker</Name>
+        <ConfigUI>
+            <Field id="host" type="textfield" defaultValue="192.168.100.160">
+                <Label>Broker Host:</Label>
+                <Description>Hostname or IP. Leave blank to use MQTT_BROKER from IndigoSecrets.py.</Description>
+            </Field>
+            <Field id="port" type="textfield" defaultValue="1883">
+                <Label>Broker Port:</Label>
+            </Field>
+            <Field id="username" type="textfield" defaultValue="">
+                <Label>Username:</Label>
+                <Description>Blank = use MQTT_USERNAME from IndigoSecrets.py (or no auth).</Description>
+            </Field>
+            <Field id="password" type="textfield" secure="true" defaultValue="">
+                <Label>Password:</Label>
+                <Description>Blank = use MQTT_PASSWORD from IndigoSecrets.py.</Description>
+            </Field>
+            <Field id="useTLS" type="checkbox" defaultValue="false">
+                <Label>Use TLS:</Label>
+            </Field>
+            <Field id="clientId" type="textfield" defaultValue="indigo-mqtt-explorer">
+                <Label>Client ID:</Label>
+                <Description>An Indigo device ID suffix is appended automatically.</Description>
+            </Field>
+            <Field id="historyLimit" type="textfield" defaultValue="50">
+                <Label>History per topic:</Label>
+                <Description>Max messages kept per topic (older are dropped).</Description>
+            </Field>
+            <Field id="topicFilter" type="textfield" defaultValue="#">
+                <Label>Subscribe Topic:</Label>
+                <Description>Default `#` (firehose). Comma-separate for multiple filters.</Description>
+            </Field>
+        </ConfigUI>
+        <States>
+            <State id="connected">
+                <ValueType>Boolean</ValueType>
+                <TriggerLabel>Connected Changed</TriggerLabel>
+                <ControlPageLabel>Connected</ControlPageLabel>
+            </State>
+            <State id="topicCount">
+                <ValueType>Integer</ValueType>
+                <TriggerLabel>Topic Count Changed</TriggerLabel>
+                <ControlPageLabel>Topics</ControlPageLabel>
+            </State>
+            <State id="messageCount">
+                <ValueType>Integer</ValueType>
+                <TriggerLabel>Message Count Changed</TriggerLabel>
+                <ControlPageLabel>Messages</ControlPageLabel>
+            </State>
+            <State id="lastMessageTime">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Last Message Time Changed</TriggerLabel>
+                <ControlPageLabel>Last Msg</ControlPageLabel>
+            </State>
+            <State id="lastError">
+                <ValueType>String</ValueType>
+                <TriggerLabel>Last Error Changed</TriggerLabel>
+                <ControlPageLabel>Last Error</ControlPageLabel>
+            </State>
+        </States>
+        <UiDisplayStateId>connected</UiDisplayStateId>
+    </Device>
+
+</Devices>

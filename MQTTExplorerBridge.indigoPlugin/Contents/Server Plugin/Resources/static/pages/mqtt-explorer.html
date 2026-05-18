@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="indigo-page-title" content="MQTT Explorer">
+<meta name="indigo-page-icon" content="antenna.radiowaves.left.and.right">
+<title>MQTT Explorer</title>
+<style>
+:root {
+    --bg: #f7f7f8;
+    --fg: #1c1c1e;
+    --muted: #6e6e73;
+    --border: #d1d1d6;
+    --panel: #ffffff;
+    --hover: #e8e8ed;
+    --accent: #0a84ff;
+    --retained: #ff9f0a;
+    --binary: #af52de;
+    --good: #30d158;
+    --bad: #ff453a;
+    --code-bg: #f0f0f3;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #1c1c1e;
+        --fg: #f2f2f7;
+        --muted: #98989d;
+        --border: #38383a;
+        --panel: #2c2c2e;
+        --hover: #3a3a3c;
+        --accent: #0a84ff;
+        --retained: #ff9f0a;
+        --binary: #bf5af2;
+        --good: #30d158;
+        --bad: #ff453a;
+        --code-bg: #1c1c1e;
+    }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body {
+    font: 13px -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    background: var(--bg); color: var(--fg);
+    display: flex; flex-direction: column;
+}
+header {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+header h1 { font-size: 14px; font-weight: 600; margin: 0 8px 0 0; }
+header input, header select, header button {
+    font: inherit; padding: 4px 8px;
+    border: 1px solid var(--border); border-radius: 5px;
+    background: var(--bg); color: var(--fg);
+}
+header button {
+    background: var(--accent); color: white; border: none; cursor: pointer;
+}
+header button.secondary { background: var(--panel); color: var(--fg); border: 1px solid var(--border); }
+header .status { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--muted); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); margin-right: 4px; vertical-align: middle; }
+.dot.on  { background: var(--good); }
+.dot.off { background: var(--bad); }
+
+main { flex: 1; display: flex; min-height: 0; }
+.tree-pane {
+    width: 38%; min-width: 260px; max-width: 600px;
+    border-right: 1px solid var(--border);
+    background: var(--panel);
+    display: flex; flex-direction: column;
+}
+.tree-filter { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.tree-filter input { width: 100%; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--fg); font: inherit; }
+.tree { flex: 1; overflow: auto; padding: 4px 0; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+.node { padding: 1px 0; }
+.node-row {
+    display: flex; align-items: center; gap: 4px;
+    padding: 2px 6px; cursor: pointer; white-space: nowrap;
+    border-radius: 3px;
+}
+.node-row:hover { background: var(--hover); }
+.node-row.selected { background: var(--accent); color: white; }
+.node-row .twist { width: 12px; display: inline-block; text-align: center; color: var(--muted); user-select: none; }
+.node-row.selected .twist { color: rgba(255,255,255,0.7); }
+.node-row .seg { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.node-row .badge { font-size: 10px; padding: 1px 4px; border-radius: 3px; background: var(--hover); color: var(--muted); }
+.node-row.selected .badge { background: rgba(255,255,255,0.2); color: white; }
+.node-row .badge.retained { background: var(--retained); color: white; }
+.node-row .badge.binary  { background: var(--binary);  color: white; }
+
+.node-children { padding-left: 14px; }
+.detail-pane {
+    flex: 1; display: flex; flex-direction: column;
+    min-width: 0;
+}
+.detail-header {
+    padding: 8px 12px; border-bottom: 1px solid var(--border);
+    background: var(--panel);
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+}
+.detail-header .topic { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; color: var(--muted); }
+.detail-header .topic .full { color: var(--fg); }
+.detail-header .meta { font-size: 11px; color: var(--muted); display: flex; gap: 10px; }
+
+.payload-current {
+    padding: 12px;
+    border-bottom: 1px solid var(--border);
+    overflow: auto;
+    max-height: 40%;
+}
+.payload-current pre {
+    margin: 0; padding: 10px; background: var(--code-bg); border-radius: 6px;
+    font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+    white-space: pre-wrap; word-break: break-all;
+    color: var(--fg);
+}
+.history-list { flex: 1; overflow: auto; padding: 8px 12px; }
+.history-item {
+    border-left: 2px solid var(--border);
+    padding: 6px 8px; margin-bottom: 6px;
+    font: 11px ui-monospace, "SF Mono", Menlo, monospace;
+    background: var(--panel); border-radius: 0 4px 4px 0;
+}
+.history-item .ts { color: var(--muted); font-size: 10px; margin-bottom: 2px; }
+.history-item .payload { white-space: pre-wrap; word-break: break-all; }
+.history-item.retained { border-left-color: var(--retained); }
+.history-item.binary   { border-left-color: var(--binary); }
+
+.publish-panel {
+    border-top: 1px solid var(--border);
+    background: var(--panel);
+    padding: 8px 12px;
+}
+.publish-panel.disabled { opacity: 0.4; pointer-events: none; }
+.publish-row { display: flex; gap: 6px; margin-bottom: 6px; align-items: center; flex-wrap: wrap; }
+.publish-row label { font-size: 11px; color: var(--muted); margin-right: 2px; }
+.publish-row input, .publish-row select, .publish-row textarea {
+    font: 12px ui-monospace, "SF Mono", Menlo, monospace;
+    padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px;
+    background: var(--bg); color: var(--fg);
+}
+.publish-row input[type=text]      { flex: 1; min-width: 200px; }
+.publish-row textarea               { width: 100%; min-height: 60px; resize: vertical; }
+.publish-row button {
+    background: var(--accent); color: white; border: none;
+    padding: 5px 12px; border-radius: 4px; cursor: pointer;
+}
+.publish-row button.danger { background: var(--bad); }
+
+.connect-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 100;
+}
+.connect-overlay.hidden { display: none; }
+.connect-card {
+    background: var(--panel); padding: 20px 24px; border-radius: 10px;
+    min-width: 360px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+.connect-card h2 { margin: 0 0 12px 0; font-size: 16px; }
+.connect-card label { display: block; font-size: 11px; color: var(--muted); margin: 8px 0 2px; }
+.connect-card input {
+    width: 100%; padding: 6px 8px; border: 1px solid var(--border);
+    border-radius: 4px; background: var(--bg); color: var(--fg); font: inherit;
+}
+.connect-card button {
+    margin-top: 14px; width: 100%; padding: 8px; background: var(--accent);
+    color: white; border: none; border-radius: 5px; cursor: pointer; font: inherit;
+}
+.connect-card .error { color: var(--bad); font-size: 12px; margin-top: 8px; min-height: 16px; }
+.empty {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    color: var(--muted); font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<header>
+    <h1>MQTT Explorer</h1>
+    <select id="brokerSel"></select>
+    <button id="reconnectBtn" class="secondary">Reconnect</button>
+    <button id="clearBtn"     class="secondary">Clear View</button>
+    <div class="status">
+        <span><span id="connDot" class="dot off"></span><span id="connText">disconnected</span></span>
+        <span>topics: <b id="topicCount">0</b></span>
+        <span>messages: <b id="msgCount">0</b></span>
+    </div>
+</header>
+
+<main>
+    <aside class="tree-pane">
+        <div class="tree-filter">
+            <input id="treeFilter" type="text" placeholder="Filter topics… (substring match)">
+        </div>
+        <div id="tree" class="tree"></div>
+    </aside>
+
+    <section class="detail-pane">
+        <div class="detail-header">
+            <span class="topic"><span class="full" id="selTopic">(no topic selected)</span></span>
+            <span class="meta">
+                <span id="selTs"></span>
+                <span id="selQos"></span>
+                <span id="selRetained"></span>
+                <span id="selBinary"></span>
+            </span>
+        </div>
+        <div class="payload-current">
+            <pre id="payloadPre">—</pre>
+        </div>
+        <div class="history-list" id="historyList"></div>
+        <div id="publishPanel" class="publish-panel">
+            <div class="publish-row">
+                <label>Topic</label>
+                <input id="pubTopic" type="text" placeholder="topic/to/publish">
+                <label>QoS</label>
+                <select id="pubQos">
+                    <option value="0">0</option>
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                </select>
+                <label><input type="checkbox" id="pubRetain"> Retain</label>
+            </div>
+            <div class="publish-row">
+                <textarea id="pubPayload" placeholder="payload (string or JSON)"></textarea>
+            </div>
+            <div class="publish-row">
+                <button id="pubBtn">Publish</button>
+                <button id="clearRetainedBtn" class="danger">Clear Retained on Topic</button>
+                <span id="pubStatus" style="font-size:11px;color:var(--muted);"></span>
+            </div>
+        </div>
+    </section>
+</main>
+
+<div id="connectOverlay" class="connect-overlay">
+    <div class="connect-card">
+        <h2>Connect to MQTT Explorer Bridge</h2>
+        <label>WebSocket host</label>
+        <input id="cfgHost" type="text" placeholder="192.168.100.160">
+        <label>WS port</label>
+        <input id="cfgPort" type="text" placeholder="9876">
+        <label>Auth token</label>
+        <input id="cfgToken" type="password" placeholder="MQTT_EXPLORER_TOKEN">
+        <label><input type="checkbox" id="cfgTls"> Use WSS (TLS)</label>
+        <button id="cfgConnect">Connect</button>
+        <div id="cfgError" class="error"></div>
+    </div>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+    ws:          null,
+    brokers:     [],
+    currentBroker: null,
+    tree:        {},          // segmented tree: { children: {}, payload: ?, ts: ?, ... }
+    flatIndex:   {},          // topic -> tree node (leaf)
+    selectedTopic: null,
+    expanded:    new Set(),
+    publishEnabled: false,
+    topicCount:  0,
+    msgCount:    0,
+    filterText:  "",
+};
+
+// -------- config persistence --------
+function loadCfg() {
+    try {
+        return JSON.parse(localStorage.getItem("mqttExplorerCfg") || "{}");
+    } catch (e) { return {}; }
+}
+function saveCfg(cfg) { localStorage.setItem("mqttExplorerCfg", JSON.stringify(cfg)); }
+
+// Auto-populate from URL query (?wsPort=X&token=Y)
+(function preloadCfg() {
+    const cfg = loadCfg();
+    const url = new URL(window.location.href);
+    const wsPort = url.searchParams.get("wsPort");
+    const token  = url.searchParams.get("token");
+    const host   = url.searchParams.get("host") || cfg.host || window.location.hostname || "localhost";
+    $("cfgHost").value  = cfg.host || host;
+    $("cfgPort").value  = wsPort || cfg.port || "9876";
+    $("cfgToken").value = token || cfg.token || "";
+    $("cfgTls").checked = (cfg.tls === true) || window.location.protocol === "https:";
+})();
+
+$("cfgConnect").addEventListener("click", () => {
+    const cfg = {
+        host:  $("cfgHost").value.trim(),
+        port:  $("cfgPort").value.trim() || "9876",
+        token: $("cfgToken").value.trim(),
+        tls:   $("cfgTls").checked,
+    };
+    if (!cfg.host || !cfg.token) {
+        $("cfgError").textContent = "Host and token are required.";
+        return;
+    }
+    saveCfg(cfg);
+    $("cfgError").textContent = "";
+    connect(cfg);
+});
+
+$("reconnectBtn").addEventListener("click", () => {
+    if (state.ws) { try { state.ws.close(); } catch(e){} }
+    const cfg = loadCfg();
+    if (cfg.host) connect(cfg);
+    else $("connectOverlay").classList.remove("hidden");
+});
+
+$("clearBtn").addEventListener("click", () => {
+    state.tree = {};
+    state.flatIndex = {};
+    state.topicCount = 0;
+    state.msgCount = 0;
+    state.selectedTopic = null;
+    updateStatus();
+    renderTree();
+    renderDetail();
+});
+
+$("treeFilter").addEventListener("input", (e) => {
+    state.filterText = e.target.value.toLowerCase();
+    renderTree();
+});
+
+$("brokerSel").addEventListener("change", () => {
+    const bid = parseInt($("brokerSel").value, 10);
+    if (!isNaN(bid)) selectBroker(bid);
+});
+
+$("pubBtn").addEventListener("click", () => {
+    if (!state.currentBroker || !state.ws) return;
+    const topic = $("pubTopic").value.trim();
+    if (!topic) { $("pubStatus").textContent = "Topic required"; return; }
+    state.ws.send(JSON.stringify({
+        action:   "publish",
+        brokerId: state.currentBroker,
+        topic:    topic,
+        payload:  $("pubPayload").value,
+        qos:      parseInt($("pubQos").value, 10),
+        retain:   $("pubRetain").checked,
+    }));
+});
+
+$("clearRetainedBtn").addEventListener("click", () => {
+    if (!state.currentBroker || !state.ws) return;
+    const topic = $("pubTopic").value.trim() || state.selectedTopic;
+    if (!topic) { $("pubStatus").textContent = "Topic required"; return; }
+    if (!confirm("Clear retained message on " + topic + " ?")) return;
+    state.ws.send(JSON.stringify({
+        action:   "clearRetained",
+        brokerId: state.currentBroker,
+        topic:    topic,
+    }));
+    $("pubStatus").textContent = "Clear request sent";
+});
+
+// -------- WebSocket --------
+function connect(cfg) {
+    const scheme = cfg.tls ? "wss" : "ws";
+    const url = scheme + "://" + cfg.host + ":" + cfg.port + "/?token=" + encodeURIComponent(cfg.token);
+    setConn(false, "connecting…");
+    const ws = new WebSocket(url);
+    state.ws = ws;
+
+    ws.addEventListener("open", () => {
+        setConn(true, "connected");
+        $("connectOverlay").classList.add("hidden");
+        $("cfgError").textContent = "";
+    });
+
+    ws.addEventListener("close", (ev) => {
+        setConn(false, "closed (" + ev.code + ")");
+        if (ev.code === 4401) {
+            $("cfgError").textContent = "Auth rejected — check token.";
+            $("connectOverlay").classList.remove("hidden");
+        }
+    });
+
+    ws.addEventListener("error", () => {
+        setConn(false, "error");
+        $("cfgError").textContent = "Could not connect to " + url;
+        $("connectOverlay").classList.remove("hidden");
+    });
+
+    ws.addEventListener("message", (ev) => {
+        let msg;
+        try { msg = JSON.parse(ev.data); } catch(e) { return; }
+        handleMessage(msg);
+    });
+}
+
+function setConn(ok, text) {
+    $("connDot").className = "dot " + (ok ? "on" : "off");
+    $("connText").textContent = text;
+}
+
+function handleMessage(msg) {
+    if (msg.type === "hello") {
+        state.brokers = msg.brokers || [];
+        state.publishEnabled = !!msg.publishEnabled;
+        $("publishPanel").classList.toggle("disabled", !state.publishEnabled);
+        renderBrokerSelect();
+        if (state.brokers.length) selectBroker(state.brokers[0].id);
+    }
+    else if (msg.type === "brokers") {
+        state.brokers = msg.brokers || [];
+        renderBrokerSelect();
+    }
+    else if (msg.type === "snapshot") {
+        if (msg.brokerId !== state.currentBroker) return;
+        state.tree = {};
+        state.flatIndex = {};
+        state.topicCount = 0;
+        state.msgCount = 0;
+        Object.entries(msg.tree || {}).forEach(([topic, node]) => {
+            applyMessage(topic, node, false);
+        });
+        renderTree();
+        renderDetail();
+        updateStatus();
+    }
+    else if (msg.type === "messages") {
+        if (msg.brokerId !== state.currentBroker) return;
+        (msg.messages || []).forEach(m => applyMessage(m.topic, m, true));
+        renderTreeIncremental();
+        if (state.selectedTopic && (msg.messages || []).some(m => m.topic === state.selectedTopic)) {
+            renderDetail();
+        }
+        updateStatus();
+    }
+    else if (msg.type === "history") {
+        if (msg.brokerId !== state.currentBroker) return;
+        if (msg.topic !== state.selectedTopic) return;
+        renderHistory(msg.history || []);
+    }
+    else if (msg.type === "published") {
+        $("pubStatus").textContent = msg.ok ? ("Published to " + msg.topic) : "Publish failed";
+    }
+    else if (msg.type === "error") {
+        $("pubStatus").textContent = "Error: " + msg.error;
+    }
+}
+
+function selectBroker(bid) {
+    state.currentBroker = bid;
+    $("brokerSel").value = String(bid);
+    state.tree = {};
+    state.flatIndex = {};
+    state.topicCount = 0;
+    state.msgCount = 0;
+    state.selectedTopic = null;
+    renderTree();
+    renderDetail();
+    state.ws.send(JSON.stringify({ action: "subscribe", brokerId: bid }));
+}
+
+function applyMessage(topic, node, isLive) {
+    const segments = topic.split("/");
+    let cur = state.tree;
+    for (let i = 0; i < segments.length; i++) {
+        const seg = segments[i];
+        if (!cur[seg]) cur[seg] = { children: {} };
+        cur = cur[seg];
+        if (!cur.children) cur.children = {};
+        if (i === segments.length - 1) {
+            const isNew = !state.flatIndex[topic];
+            cur.payload  = node.payload;
+            cur.qos      = node.qos;
+            cur.retained = node.retained;
+            cur.ts       = node.ts;
+            cur.binary   = node.binary;
+            cur.topic    = topic;
+            state.flatIndex[topic] = cur;
+            if (isNew) state.topicCount += 1;
+            if (isLive) state.msgCount += 1;
+        }
+        cur = cur.children;
+    }
+}
+
+function updateStatus() {
+    $("topicCount").textContent = state.topicCount;
+    $("msgCount").textContent   = state.msgCount;
+}
+
+function renderBrokerSelect() {
+    const sel = $("brokerSel");
+    sel.innerHTML = "";
+    state.brokers.forEach(b => {
+        const opt = document.createElement("option");
+        opt.value = String(b.id);
+        opt.textContent = b.name + " (" + b.host + ")" + (b.connected ? "" : " ✗");
+        sel.appendChild(opt);
+    });
+    if (state.currentBroker != null) sel.value = String(state.currentBroker);
+}
+
+// -------- Tree rendering --------
+let renderScheduled = false;
+function renderTreeIncremental() {
+    if (renderScheduled) return;
+    renderScheduled = true;
+    requestAnimationFrame(() => {
+        renderScheduled = false;
+        renderTree();
+    });
+}
+
+function renderTree() {
+    const container = $("tree");
+    container.innerHTML = "";
+    renderLevel(container, state.tree, "");
+}
+
+function renderLevel(parentEl, level, path) {
+    const segs = Object.keys(level).sort();
+    for (const seg of segs) {
+        const node = level[seg];
+        const fullPath = path ? path + "/" + seg : seg;
+        const hasChildren = node.children && Object.keys(node.children).length > 0;
+
+        // Apply filter — show this subtree if any descendant topic matches
+        if (state.filterText && !subtreeMatches(node, fullPath, state.filterText)) {
+            continue;
+        }
+
+        const div = document.createElement("div");
+        div.className = "node";
+
+        const row = document.createElement("div");
+        row.className = "node-row";
+        if (state.selectedTopic === fullPath) row.classList.add("selected");
+
+        const twist = document.createElement("span");
+        twist.className = "twist";
+        if (hasChildren) twist.textContent = state.expanded.has(fullPath) ? "▾" : "▸";
+        row.appendChild(twist);
+
+        const segEl = document.createElement("span");
+        segEl.className = "seg";
+        segEl.textContent = seg;
+        row.appendChild(segEl);
+
+        if (node.topic) {
+            const badge = document.createElement("span");
+            badge.className = "badge";
+            const previewLen = (node.payload || "").length;
+            badge.textContent = previewLen ? (previewLen + "b") : "—";
+            row.appendChild(badge);
+        }
+        if (node.retained) {
+            const b = document.createElement("span");
+            b.className = "badge retained"; b.textContent = "R";
+            row.appendChild(b);
+        }
+        if (node.binary) {
+            const b = document.createElement("span");
+            b.className = "badge binary"; b.textContent = "BIN";
+            row.appendChild(b);
+        }
+
+        row.addEventListener("click", () => {
+            if (hasChildren) {
+                if (state.expanded.has(fullPath)) state.expanded.delete(fullPath);
+                else state.expanded.add(fullPath);
+            }
+            if (node.topic) {
+                state.selectedTopic = fullPath;
+                $("pubTopic").value = fullPath;
+                state.ws.send(JSON.stringify({
+                    action: "history", brokerId: state.currentBroker, topic: fullPath,
+                }));
+                renderDetail();
+            }
+            renderTree();
+        });
+
+        div.appendChild(row);
+
+        if (hasChildren && state.expanded.has(fullPath)) {
+            const childWrap = document.createElement("div");
+            childWrap.className = "node-children";
+            renderLevel(childWrap, node.children, fullPath);
+            div.appendChild(childWrap);
+        }
+        parentEl.appendChild(div);
+    }
+}
+
+function subtreeMatches(node, fullPath, filter) {
+    if (fullPath.toLowerCase().includes(filter)) return true;
+    if (node.children) {
+        for (const seg of Object.keys(node.children)) {
+            if (subtreeMatches(node.children[seg], fullPath + "/" + seg, filter)) return true;
+        }
+    }
+    return false;
+}
+
+// -------- Detail rendering --------
+function renderDetail() {
+    const topic = state.selectedTopic;
+    const node  = topic ? state.flatIndex[topic] : null;
+    $("selTopic").textContent = topic || "(no topic selected)";
+    if (!node) {
+        $("payloadPre").textContent = "—";
+        $("selTs").textContent = "";
+        $("selQos").textContent = "";
+        $("selRetained").textContent = "";
+        $("selBinary").textContent = "";
+        $("historyList").innerHTML = "";
+        return;
+    }
+    $("selTs").textContent       = node.ts;
+    $("selQos").textContent      = "QoS " + node.qos;
+    $("selRetained").textContent = node.retained ? "● retained" : "";
+    $("selBinary").textContent   = node.binary   ? "● binary (hex)" : "";
+    $("payloadPre").textContent  = formatPayload(node.payload, node.binary);
+    // History fetched on demand via WS
+}
+
+function renderHistory(history) {
+    const list = $("historyList");
+    list.innerHTML = "";
+    // newest first
+    const arr = history.slice().reverse();
+    arr.forEach(h => {
+        const item = document.createElement("div");
+        item.className = "history-item" + (h.retained ? " retained" : "") + (h.binary ? " binary" : "");
+        const ts = document.createElement("div");
+        ts.className = "ts";
+        ts.textContent = h.ts + " — QoS " + h.qos + (h.retained ? " — retained" : "") + (h.binary ? " — binary (hex)" : "");
+        const pl = document.createElement("div");
+        pl.className = "payload";
+        pl.textContent = formatPayload(h.payload, h.binary);
+        item.appendChild(ts);
+        item.appendChild(pl);
+        list.appendChild(item);
+    });
+}
+
+function formatPayload(payload, binary) {
+    if (payload == null || payload === "") return "(empty)";
+    if (binary) return payload;  // hex
+    // Try JSON pretty print
+    const trimmed = payload.trim();
+    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+        (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
+        try {
+            return JSON.stringify(JSON.parse(trimmed), null, 2);
+        } catch(e) { /* fall through */ }
+    }
+    return payload;
+}
+
+// -------- bootstrap --------
+const cfg = loadCfg();
+if (cfg.host && cfg.token) {
+    $("connectOverlay").classList.add("hidden");
+    connect(cfg);
+}
+</script>
+</body>
+</html>

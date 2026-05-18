@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PluginConfig>
+
+    <Field id="credLabel" type="label">
+        <Label>MQTT default credentials are read from IndigoSecrets.py first (MQTT_BROKER / MQTT_PORT / MQTT_USERNAME / MQTT_PASSWORD). Per-device fields override the defaults.</Label>
+    </Field>
+
+    <Field id="wsPort" type="textfield" defaultValue="9876">
+        <Label>WebSocket Port:</Label>
+        <Description>Port the plugin's WS server listens on for live messages.</Description>
+    </Field>
+
+    <Field id="wsBindAddress" type="textfield" defaultValue="0.0.0.0">
+        <Label>WS Bind Address:</Label>
+        <Description>Use 127.0.0.1 for local-only, 0.0.0.0 for LAN.</Description>
+    </Field>
+
+    <Field id="wsToken" type="textfield" secure="true" defaultValue="">
+        <Label>WS Auth Token:</Label>
+        <Description>Required in ?token=… on the WS URL. Blank = use MQTT_EXPLORER_TOKEN from IndigoSecrets.py.</Description>
+    </Field>
+
+    <Field id="enablePublish" type="checkbox" defaultValue="true">
+        <Label>Allow Publish from Web UI:</Label>
+        <Description>Uncheck to make the explorer read-only.</Description>
+    </Field>
+
+    <Field id="coalesceMs" type="textfield" defaultValue="100">
+        <Label>WS Coalesce Window (ms):</Label>
+        <Description>Updates to the same topic within this window are coalesced before push.</Description>
+    </Field>
+
+    <Field id="debug" type="checkbox" defaultValue="false">
+        <Label>Debug Logging:</Label>
+    </Field>
+
+</PluginConfig>

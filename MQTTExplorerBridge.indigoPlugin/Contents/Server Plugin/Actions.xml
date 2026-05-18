@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Actions>
+
+    <Action id="publish" deviceFilter="self.mqttBroker" uiPath="DeviceActions">
+        <Name>Publish Message</Name>
+        <CallbackMethod>actionPublish</CallbackMethod>
+        <ConfigUI>
+            <Field id="topic" type="textfield" defaultValue="">
+                <Label>Topic:</Label>
+            </Field>
+            <Field id="payload" type="textfield" defaultValue="">
+                <Label>Payload:</Label>
+            </Field>
+            <Field id="qos" type="menu" defaultValue="0">
+                <Label>QoS:</Label>
+                <List>
+                    <Option value="0">0 — at most once</Option>
+                    <Option value="1">1 — at least once</Option>
+                    <Option value="2">2 — exactly once</Option>
+                </List>
+            </Field>
+            <Field id="retain" type="checkbox" defaultValue="false">
+                <Label>Retain:</Label>
+            </Field>
+        </ConfigUI>
+    </Action>
+
+    <Action id="clearRetained" deviceFilter="self.mqttBroker" uiPath="DeviceActions">
+        <Name>Clear Retained Message</Name>
+        <CallbackMethod>actionClearRetained</CallbackMethod>
+        <ConfigUI>
+            <Field id="topic" type="textfield" defaultValue="">
+                <Label>Topic:</Label>
+                <Description>Sends zero-byte retained message to clear it on the broker.</Description>
+            </Field>
+        </ConfigUI>
+    </Action>
+
+    <Action id="clearHistory" deviceFilter="self.mqttBroker" uiPath="DeviceActions">
+        <Name>Clear Local Tree / History</Name>
+        <CallbackMethod>actionClearHistory</CallbackMethod>
+    </Action>
+
+</Actions>

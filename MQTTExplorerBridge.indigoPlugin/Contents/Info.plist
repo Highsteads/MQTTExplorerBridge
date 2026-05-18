@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>PluginVersion</key>
+	<string>1.0.0</string>
+	<key>ServerApiVersion</key>
+	<string>3.0</string>
+	<key>IwsApiVersion</key>
+	<string>1.0.0</string>
+	<key>CFBundleDisplayName</key>
+	<string>MQTT Explorer Bridge</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.clives.indigoplugin.mqttexplorerbridge</string>
+	<key>CFBundleVersion</key>
+	<string>1.0.0</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>MQTT Explorer Bridge Plugin</string>
+		</dict>
+	</array>
+	<key>GithubInfo</key>
+	<dict>
+		<key>Owner</key>
+		<string>Highsteads</string>
+		<key>Repo</key>
+		<string>MQTTExplorerBridge</string>
+	</dict>
+</dict>
+</plist>
