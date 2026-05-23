@@ -90,16 +90,14 @@ uses `MQTT_BROKER` from `IndigoSecrets.py`.
 ## Using the explorer page
 
 After installing the plugin and creating at least one broker device, open the
-page in your browser. Use Indigo's **HTTP** port (8175) so the page can talk
-to the plugin's plain `ws://` server without mixed-content blocking:
+page in your browser. Indigo's IWS serves **HTTP on port 8176** by default —
+using HTTP avoids `ws://` mixed-content blocking:
 
 ```
-http://192.168.100.160:8175/com.clives.indigoplugin.mqttexplorerbridge/static/pages/mqtt-explorer.html?wsPort=9876
+http://192.168.100.160:8176/com.clives.indigoplugin.mqttexplorerbridge/static/pages/mqtt-explorer.html?wsPort=9876
 ```
 
-(Plugins → MQTT Explorer Bridge → **Open MQTT Explorer Page** logs the URL —
-switch the `https://…:8176` it prints to `http://…:8175`, or just bookmark
-the form above.)
+(Plugins → MQTT Explorer Bridge → **Open MQTT Explorer Page** logs the URL.)
 
 The first time you open it, fill in:
 
@@ -131,4 +129,5 @@ These are remembered in `localStorage`. To pre-fill the token, append
 
 ## Version history
 
+- **1.0.1** (23-05-2026) — blanked the `host` field's `defaultValue` (was the developer's broker IP); IndigoSecrets / `MQTT_BROKER` resolution unchanged.
 - **1.0.0** (18-05-2026) — initial release
