@@ -5,7 +5,7 @@
     <Device type="custom" id="mqttBroker">
         <Name>MQTT Broker</Name>
         <ConfigUI>
-            <Field id="host" type="textfield" defaultValue="192.168.100.160">
+            <Field id="host" type="textfield" defaultValue="">
                 <Label>Broker Host:</Label>
                 <Description>Hostname or IP. Leave blank to use MQTT_BROKER from IndigoSecrets.py.</Description>
             </Field>

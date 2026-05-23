@@ -4,8 +4,8 @@
 # Description: MQTT Explorer Bridge — captures MQTT traffic and serves it to a
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
-# Date:        18-05-2026
-# Version:     1.0.0
+# Date:        23-05-2026
+# Version:     1.0.1
 
 try:
     import indigo
@@ -657,10 +657,10 @@ class Plugin(indigo.PluginBase):
 
     def menuOpenExplorer(self, valuesDict=None, typeId=None):
         # Print the URL to open. Page is served by Indigo IWS from this plugin's
-        # static dir on port 8175 (HTTP) — using HTTP avoids ws:// mixed-content
-        # blocking. Use 8176 (HTTPS) only if you have a TLS proxy in front of
-        # the plugin's WS server.
-        url = (f"http://{indigo.server.address}:8175/{PLUGIN_ID}"
+        # static dir on port 8176 (HTTP by default). Using HTTP avoids ws://
+        # mixed-content blocking. If your Indigo runs IWS in HTTPS mode you'll
+        # need a TLS proxy in front of the plugin's WS server too.
+        url = (f"http://{indigo.server.address}:8176/{PLUGIN_ID}"
                f"/static/pages/mqtt-explorer.html?wsPort={self.ws_port}")
         self.logger.info("MQTT Explorer URL:")
         self.logger.info(f"   {url}")
