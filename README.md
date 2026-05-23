@@ -127,7 +127,21 @@ These are remembered in `localStorage`. To pre-fill the token, append
   is ~100KB. The coalesce window prevents the UI from choking on rapid bursts
   on the same topic, but very chatty installs should narrow the topic filter.
 
+## Logging
+
+Every log line is prefixed with a millisecond timestamp `[HH:MM:SS.mmm]` so
+events can be correlated tightly with other CliveS plugins (Device Activity
+Monitor uses the same convention).
+
+To turn the prefix off (or back on) at any time:
+
+**Plugins → MQTT Explorer Bridge → Toggle Timestamps in Log (on/off)**
+
+The setting is stored in `pluginPrefs` (`timestampEnabled`) and persists across
+restarts. Defaults to ON.
+
 ## Version history
 
+- **1.0.2** (23-05-2026) — millisecond timestamp `[HH:MM:SS.mmm]` prefix on every `self.logger` line via `plugin_utils.install_timestamp_filter()`; new "Toggle Timestamps in Log" menu item.
 - **1.0.1** (23-05-2026) — blanked the `host` field's `defaultValue` (was the developer's broker IP); IndigoSecrets / `MQTT_BROKER` resolution unchanged.
 - **1.0.0** (18-05-2026) — initial release

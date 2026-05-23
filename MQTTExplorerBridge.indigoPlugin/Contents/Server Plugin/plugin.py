@@ -5,7 +5,11 @@
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
 # Date:        23-05-2026
-# Version:     1.0.1
+# Version:     1.0.2
+#
+# v1.0.2 (23-05-2026): Millisecond timestamp [HH:MM:SS.mmm] prefix on every
+# log line via plugin_utils.install_timestamp_filter() — matches Device
+# Activity Monitor convention. New "Toggle Timestamps in Log" menu item.
 
 try:
     import indigo
@@ -26,6 +30,10 @@ try:
     from plugin_utils import log_startup_banner
 except ImportError:
     log_startup_banner = None
+try:
+    from plugin_utils import install_timestamp_filter
+except ImportError:
+    install_timestamp_filter = None
 
 # Shared secrets path
 _sys.path.insert(0, "/Library/Application Support/Perceptive Automation")
@@ -64,7 +72,7 @@ import websockets
 # ============================================================
 
 PLUGIN_ID      = "com.clives.indigoplugin.mqttexplorerbridge"
-PLUGIN_VERSION = "1.0.0"
+PLUGIN_VERSION = "1.0.2"
 
 
 # ============================================================
@@ -73,7 +81,7 @@ PLUGIN_VERSION = "1.0.0"
 
 def log(message, level="INFO"):
     """Timestamped log — routes to Indigo event log."""
-    indigo.server.log(f"[{datetime.now().strftime('%H:%M:%S')}] {message}", level=level)
+    indigo.server.log(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] {message}", level=level)
 
 
 def _now_iso():
@@ -115,6 +123,13 @@ class Plugin(indigo.PluginBase):
         super().__init__(pluginId, pluginDisplayName, pluginVersion, pluginPrefs)
 
         self.debug          = pluginPrefs.get("debug", False)
+        self.timestamp_enabled = bool(pluginPrefs.get("timestampEnabled", True))
+
+        if install_timestamp_filter:
+            self._ts_filter = install_timestamp_filter(self, enabled=self.timestamp_enabled)
+        else:
+            self._ts_filter = None
+
         self.ws_port        = int(pluginPrefs.get("wsPort", 9876))
         self.ws_bind        = pluginPrefs.get("wsBindAddress", "0.0.0.0")
         self.coalesce_ms    = int(pluginPrefs.get("coalesceMs", 100))
@@ -686,13 +701,25 @@ class Plugin(indigo.PluginBase):
                     self.logger.info(f"  ... (truncated, {len(state.tree) - 200} more topics)")
 
     def showPluginInfo(self, valuesDict=None, typeId=None):
+        extras = [
+            ("WS Port:",           str(self.ws_port)),
+            ("WS Bind:",           self.ws_bind),
+            ("Publish UI:",        "enabled" if self.enable_publish else "READ-ONLY"),
+            ("Brokers:",           str(len(self.brokers))),
+            ("WS Clients:",        str(len(self.ws_clients))),
+            ("Timestamps in Log:", "ON" if self.timestamp_enabled else "OFF"),
+        ]
         if log_startup_banner:
-            log_startup_banner(self.pluginId, self.pluginDisplayName, self.pluginVersion, extras=[
-                ("WS Port:",    str(self.ws_port)),
-                ("WS Bind:",    self.ws_bind),
-                ("Publish UI:", "enabled" if self.enable_publish else "READ-ONLY"),
-                ("Brokers:",    str(len(self.brokers))),
-                ("WS Clients:", str(len(self.ws_clients))),
-            ])
+            log_startup_banner(self.pluginId, self.pluginDisplayName, self.pluginVersion, extras=extras)
         else:
             indigo.server.log(f"{self.pluginDisplayName} v{self.pluginVersion}")
+            for label, value in extras:
+                indigo.server.log(f"  {label} {value}")
+
+    def menuToggleTimestamps(self):
+        self.timestamp_enabled = not self.timestamp_enabled
+        self.pluginPrefs["timestampEnabled"] = self.timestamp_enabled
+        if self._ts_filter:
+            self._ts_filter.enabled = self.timestamp_enabled
+        state = "ON" if self.timestamp_enabled else "OFF"
+        indigo.server.log(f"[{self.pluginDisplayName}] Timestamps in Log -> {state}")
