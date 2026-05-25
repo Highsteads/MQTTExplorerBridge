@@ -4,8 +4,13 @@
 # Description: MQTT Explorer Bridge — captures MQTT traffic and serves it to a
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
-# Date:        23-05-2026
-# Version:     1.0.2
+# Date:        25-05-2026
+# Version:     1.0.3
+#
+# v1.0.3 (25-05-2026): Cleaner WebSocket server shutdown — wait on an
+# asyncio.Event instead of asyncio.sleep(3600) so the coroutine returns
+# normally on stop, avoiding the "Event loop stopped before Future completed"
+# RuntimeError on plugin reload.
 #
 # v1.0.2 (23-05-2026): Millisecond timestamp [HH:MM:SS.mmm] prefix on every
 # log line via plugin_utils.install_timestamp_filter() — matches Device
@@ -72,7 +77,7 @@ import websockets
 # ============================================================
 
 PLUGIN_ID      = "com.clives.indigoplugin.mqttexplorerbridge"
-PLUGIN_VERSION = "1.0.2"
+PLUGIN_VERSION = "1.0.3"
 
 
 # ============================================================
@@ -139,6 +144,7 @@ class Plugin(indigo.PluginBase):
         self.brokers          = {}   # dev_id -> BrokerState
         self.ws_loop          = None
         self.ws_thread        = None
+        self.ws_stop_event    = None # asyncio.Event created on ws_loop, set to trigger clean shutdown
         self.ws_clients       = {}   # id(ws) -> {"ws": ws, "subs": set(dev_id)}
         self.ws_pending       = {}   # (dev_id, topic) -> entry
         self.ws_pending_lock  = threading.Lock()
@@ -428,13 +434,17 @@ class Plugin(indigo.PluginBase):
         self.ws_thread.start()
 
     def _stop_ws_server(self):
-        loop = self.ws_loop
-        if loop and loop.is_running():
-            loop.call_soon_threadsafe(loop.stop)
+        loop  = self.ws_loop
+        event = self.ws_stop_event
+        if loop and loop.is_running() and event is not None:
+            # Signal the coroutine to return cleanly — do NOT call loop.stop(),
+            # that would raise "Event loop stopped before Future completed".
+            loop.call_soon_threadsafe(event.set)
         if self.ws_thread:
             self.ws_thread.join(timeout=3)
-        self.ws_loop   = None
-        self.ws_thread = None
+        self.ws_loop       = None
+        self.ws_thread     = None
+        self.ws_stop_event = None
 
     def _ws_thread_main(self):
         loop = asyncio.new_event_loop()
@@ -461,13 +471,12 @@ class Plugin(indigo.PluginBase):
             return
         self.logger.info(f"WS server listening on {self.ws_bind}:{self.ws_port}")
         flush_task = asyncio.create_task(self._ws_flush_loop())
-        stop_event = asyncio.Event()
-        loop = asyncio.get_running_loop()
-        # When loop.stop() is called from _stop_ws_server, run_until_complete returns.
-        # Keep alive until then by waiting on a never-set event with a periodic yield.
+        # Stop event MUST be created inside this coroutine so it is bound to the
+        # running loop — _stop_ws_server() sets it via call_soon_threadsafe to
+        # request a clean shutdown without stopping the loop.
+        self.ws_stop_event = asyncio.Event()
         try:
-            while True:
-                await asyncio.sleep(3600)
+            await self.ws_stop_event.wait()
         except (asyncio.CancelledError, GeneratorExit):
             pass
         finally:
