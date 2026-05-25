@@ -149,14 +149,7 @@ class Plugin(indigo.PluginBase):
         self.ws_pending       = {}   # (dev_id, topic) -> entry
         self.ws_pending_lock  = threading.Lock()
 
-        if log_startup_banner:
-            log_startup_banner(pluginId, pluginDisplayName, pluginVersion, extras=[
-                ("WS Port:",    str(self.ws_port)),
-                ("WS Bind:",    self.ws_bind),
-                ("Publish UI:", "enabled" if self.enable_publish else "READ-ONLY"),
-            ])
-        else:
-            indigo.server.log(f"{pluginDisplayName} v{pluginVersion} starting")
+        # Startup banner moved to showPluginInfo on demand (revised 25-May-2026 per Jay).
 
         if not self.ws_token:
             self.logger.error("No WS auth token configured — set MQTT_EXPLORER_TOKEN in "
