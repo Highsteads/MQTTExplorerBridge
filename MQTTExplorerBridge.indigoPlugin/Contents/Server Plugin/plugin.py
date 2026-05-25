@@ -5,7 +5,7 @@
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
 # Date:        25-05-2026
-# Version:     1.0.3
+# Version:     1.0.4
 #
 # v1.0.3 (25-05-2026): Cleaner WebSocket server shutdown — wait on an
 # asyncio.Event instead of asyncio.sleep(3600) so the coroutine returns
@@ -77,7 +77,7 @@ import websockets
 # ============================================================
 
 PLUGIN_ID      = "com.clives.indigoplugin.mqttexplorerbridge"
-PLUGIN_VERSION = "1.0.3"
+PLUGIN_VERSION = "1.0.4"
 
 
 # ============================================================
@@ -270,6 +270,17 @@ class Plugin(indigo.PluginBase):
             dev.updateStateOnServer("connected", False)
         except Exception:
             pass
+
+    @staticmethod
+    def didDeviceCommPropertyChange(oldDevice, newDevice):
+        """Restart comm only when the MQTT broker connection params change.
+
+        host/port/useTLS define the broker socket; username/password authenticate;
+        clientId identifies the connection. historyLimit and topicFilter are
+        re-read by the running poller and don't require a reconnect.
+        """
+        keys = ("host", "port", "username", "password", "useTLS", "clientId")
+        return any(oldDevice.pluginProps.get(k) != newDevice.pluginProps.get(k) for k in keys)
 
     def deviceUpdated(self, orig_dev, new_dev):
         # Loop guard: ignore our own device updates
