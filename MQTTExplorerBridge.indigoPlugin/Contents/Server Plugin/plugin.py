@@ -4,8 +4,15 @@
 # Description: MQTT Explorer Bridge — captures MQTT traffic and serves it to a
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
-# Date:        25-05-2026
-# Version:     1.0.4
+# Date:        27-05-2026
+# Version:     1.0.5
+#
+# v1.0.5 (27-05-2026): Added prepare_to_sleep / wake_up overrides so the
+# WebSocket server and MQTT broker connections close cleanly when the Mac
+# sleeps, then reconnect on wake. Avoids the broker holding the previous
+# session as a stale ghost client until keepalive timeout. Harvested from
+# the 27-May-2026 plugin_base.py sweep — discovered the built-in lifecycle
+# hooks for Mac sleep/wake.
 #
 # v1.0.3 (25-05-2026): Cleaner WebSocket server shutdown — wait on an
 # asyncio.Event instead of asyncio.sleep(3600) so the coroutine returns
@@ -77,7 +84,7 @@ import websockets
 # ============================================================
 
 PLUGIN_ID      = "com.clives.indigoplugin.mqttexplorerbridge"
-PLUGIN_VERSION = "1.0.4"
+PLUGIN_VERSION = "1.0.5"
 
 
 # ============================================================
@@ -189,6 +196,25 @@ class Plugin(indigo.PluginBase):
             self.ws_bind = new_bind
             self._stop_ws_server()
             self._start_ws_server()
+
+    # --------------------------------------------------------
+    # Mac sleep / wake — close WS server + MQTT brokers cleanly so the broker
+    # doesn't see us as a stale client. Default PluginBase prepare_to_sleep /
+    # wake_up calls our deviceStopComm/deviceStartComm for each broker; we add
+    # the WS server bracket around it.
+    # --------------------------------------------------------
+
+    def prepare_to_sleep(self):
+        self.logger.info("Mac going to sleep — closing WS server and MQTT brokers")
+        self._stop_ws_server()
+        super().prepare_to_sleep()
+    prepareToSleep = prepare_to_sleep
+
+    def wake_up(self):
+        self.logger.info("Mac woke — restarting WS server and MQTT brokers")
+        self._start_ws_server()
+        super().wake_up()
+    wakeUp = wake_up
 
     # --------------------------------------------------------
     # Device lifecycle
