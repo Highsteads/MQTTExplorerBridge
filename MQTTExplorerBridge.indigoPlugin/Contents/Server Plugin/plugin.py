@@ -5,7 +5,7 @@
 #              browser-based explorer via an embedded WebSocket server.
 # Author:      CliveS & Claude Opus 4.7
 # Date:        27-05-2026
-# Version:     1.0.5
+# Version:     1.0.6
 #
 # v1.0.5 (27-05-2026): Added prepare_to_sleep / wake_up overrides so the
 # WebSocket server and MQTT broker connections close cleanly when the Mac
@@ -84,7 +84,16 @@ import websockets
 # ============================================================
 
 PLUGIN_ID      = "com.clives.indigoplugin.mqttexplorerbridge"
-PLUGIN_VERSION = "1.0.5"
+PLUGIN_VERSION = "1.0.6"
+
+
+def _as_int(value, default):
+    """Coerce to int, falling back to default on blank/non-numeric input.
+    Used for config textfields (blank after a dialog save) AND untrusted WebSocket JSON."""
+    try:
+        return int(str(value).strip())
+    except (ValueError, TypeError):
+        return default
 
 
 # ============================================================
@@ -142,9 +151,9 @@ class Plugin(indigo.PluginBase):
         else:
             self._ts_filter = None
 
-        self.ws_port        = int(pluginPrefs.get("wsPort", 9876))
+        self.ws_port        = _as_int(pluginPrefs.get("wsPort", 9876), 9876)
         self.ws_bind        = pluginPrefs.get("wsBindAddress", "0.0.0.0")
-        self.coalesce_ms    = int(pluginPrefs.get("coalesceMs", 100))
+        self.coalesce_ms    = _as_int(pluginPrefs.get("coalesceMs", 100), 100)
         self.enable_publish = bool(pluginPrefs.get("enablePublish", True))
         self.ws_token       = pluginPrefs.get("wsToken", "") or MQTT_EXPLORER_TOKEN
 
@@ -184,10 +193,10 @@ class Plugin(indigo.PluginBase):
     def closedPrefsConfigUi(self, valuesDict, userCancelled):
         if userCancelled:
             return
-        new_port  = int(valuesDict.get("wsPort", 9876))
+        new_port  = _as_int(valuesDict.get("wsPort", 9876), 9876)
         new_bind  = valuesDict.get("wsBindAddress", "0.0.0.0")
         new_token = valuesDict.get("wsToken", "") or MQTT_EXPLORER_TOKEN
-        self.coalesce_ms    = int(valuesDict.get("coalesceMs", 100))
+        self.coalesce_ms    = _as_int(valuesDict.get("coalesceMs", 100), 100)
         self.enable_publish = bool(valuesDict.get("enablePublish", True))
         self.debug          = bool(valuesDict.get("debug", False))
         self.ws_token       = new_token
@@ -563,7 +572,7 @@ class Plugin(indigo.PluginBase):
                     }))
 
                 elif action == "subscribe":
-                    bid = int(req.get("brokerId", 0))
+                    bid = _as_int(req.get("brokerId", 0), 0)
                     client_state["subs"].add(bid)
                     snap = self._snapshot_tree(bid)
                     await ws.send(json.dumps({
@@ -573,11 +582,11 @@ class Plugin(indigo.PluginBase):
                     }))
 
                 elif action == "unsubscribe":
-                    bid = int(req.get("brokerId", 0))
+                    bid = _as_int(req.get("brokerId", 0), 0)
                     client_state["subs"].discard(bid)
 
                 elif action == "history":
-                    bid   = int(req.get("brokerId", 0))
+                    bid   = _as_int(req.get("brokerId", 0), 0)
                     topic = req.get("topic", "")
                     hist  = self._topic_history(bid, topic)
                     await ws.send(json.dumps({
@@ -595,10 +604,10 @@ class Plugin(indigo.PluginBase):
                         }))
                         continue
                     ok = self._publish(
-                        int(req.get("brokerId", 0)),
+                        _as_int(req.get("brokerId", 0), 0),
                         req.get("topic", ""),
                         req.get("payload", ""),
-                        int(req.get("qos", 0)),
+                        _as_int(req.get("qos", 0), 0),
                         bool(req.get("retain", False)),
                     )
                     await ws.send(json.dumps({
@@ -611,7 +620,7 @@ class Plugin(indigo.PluginBase):
                     if not self.enable_publish:
                         continue
                     self._publish(
-                        int(req.get("brokerId", 0)),
+                        _as_int(req.get("brokerId", 0), 0),
                         req.get("topic", ""),
                         "",
                         0,
