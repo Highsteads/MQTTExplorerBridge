@@ -44,8 +44,10 @@ Instead the plugin runs its own small WS server.
 ## Credentials
 
 The plugin reads MQTT credentials from `IndigoSecrets.py` first, then falls
-back to per-device fields. Add the following to
-`/Library/Application Support/Perceptive Automation/IndigoSecrets.py`:
+back to per-device fields. That file lives at
+`/Library/Application Support/Perceptive Automation/IndigoSecrets.py` — if you do
+not have it yet, copy `IndigoSecrets_example.py` (shipped with the CliveS plugins)
+into that folder and rename the copy to `IndigoSecrets.py`. Add the following to it:
 
 ```python
 MQTT_BROKER         = "192.168.100.160"
