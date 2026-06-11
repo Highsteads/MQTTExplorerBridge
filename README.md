@@ -50,7 +50,7 @@ not have it yet, copy `IndigoSecrets_example.py` (shipped with the CliveS plugin
 into that folder and rename the copy to `IndigoSecrets.py`. Add the following to it:
 
 ```python
-MQTT_BROKER         = "192.168.100.160"
+MQTT_BROKER         = "192.168.1.20"
 MQTT_PORT           = 1883
 MQTT_USERNAME       = ""
 MQTT_PASSWORD       = ""
@@ -81,7 +81,7 @@ uses `MQTT_BROKER` from `IndigoSecrets.py`.
 
 | Field | Default | Notes |
 |---|---|---|
-| Broker Host | 192.168.100.160 | |
+| Broker Host | 192.168.1.20 | |
 | Broker Port | 1883 | |
 | Username / Password | — | Blank uses MQTT_USERNAME/PASSWORD from secrets |
 | Use TLS | off | |
@@ -96,14 +96,14 @@ page in your browser. Indigo's IWS serves **HTTP on port 8176** by default —
 using HTTP avoids `ws://` mixed-content blocking:
 
 ```
-http://192.168.100.160:8176/com.clives.indigoplugin.mqttexplorerbridge/static/pages/mqtt-explorer.html?wsPort=9876
+http://192.168.1.20:8176/com.clives.indigoplugin.mqttexplorerbridge/static/pages/mqtt-explorer.html?wsPort=9876
 ```
 
 (Plugins → MQTT Explorer Bridge → **Open MQTT Explorer Page** logs the URL.)
 
 The first time you open it, fill in:
 
-- **WebSocket host**: the Indigo server's hostname/IP (e.g. `192.168.100.160`)
+- **WebSocket host**: the Indigo server's hostname/IP (e.g. `192.168.1.20`)
 - **WS port**: 9876 (or whatever you configured)
 - **Auth token**: matches `MQTT_EXPLORER_TOKEN` / the plugin config field
 - **Use WSS**: leave unchecked
