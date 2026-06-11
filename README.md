@@ -147,3 +147,9 @@ restarts. Defaults to ON.
 - **1.0.2** (23-05-2026) — millisecond timestamp `[HH:MM:SS.mmm]` prefix on every `self.logger` line via `plugin_utils.install_timestamp_filter()`; new "Toggle Timestamps in Log" menu item.
 - **1.0.1** (23-05-2026) — blanked the `host` field's `defaultValue` (was the developer's broker IP); IndigoSecrets / `MQTT_BROKER` resolution unchanged.
 - **1.0.0** (18-05-2026) — initial release
+
+## Authors & licence
+
+Vibed into existence by **CliveS**, who knew what he wanted, argued until he got it, and tested it on a real house. Typed at inhuman speed by **Claude** (Anthropic), who mostly did as it was told.
+
+© 2026 CliveS · [MIT licence](LICENSE) — copy it, fork it, bend it, break it, fix it, ship it. If it breaks, you get to keep both pieces.
